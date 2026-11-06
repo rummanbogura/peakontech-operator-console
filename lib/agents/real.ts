@@ -19,6 +19,7 @@ import type { LlmToolSpec } from '@/lib/connectors/llm';
 import { bdpilotStatePath, gbrainBin, gbrainConfigured } from '@/lib/stores';
 import type { AgentRunResult, RuntimeAgent } from '@/lib/agents/runtime';
 import { contentLabAgent } from '@/lib/agents/content-lab';
+import { peakontechAgents } from '@/lib/agents/peakontech';
 
 /**
  * The agent roster. Every run() reports live, honest status: an agent whose
@@ -125,6 +126,7 @@ async function bdpilotStateRun(kind: 'approval' | 'inbound'): Promise<AgentRunRe
 }
 
 export const realAgents: RuntimeAgent[] = [
+  ...peakontechAgents,
   // ── TECH ─────────────────────────────────────────────────────────────
   {
     id: 'conductor',
