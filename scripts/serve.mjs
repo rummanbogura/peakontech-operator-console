@@ -68,13 +68,24 @@ const brandName = get('GLADOS_BRAND').toLowerCase() === 'glados' ? 'GladOS' : 'F
 // DEPLOY BOOTSTRAP (our mirror): propagate operator credentials from the process
 // environment into .env.local so a password-less fresh container can boot into the
 // protected state (the app itself only ever writes .env.local via the loopback setup).
-import { upsertEnvLocal } from '@/lib/auth';
+// DEPLOY BOOTSTRAP (our mirror): plain-node env-local writer (the app itself only
+// writes .env.local via the loopback setup; a fresh container needs it from env).
+import fs from 'node:fs';
+import path from 'node:path';
 {
   const fromEnv = {};
   if (process.env.GLADOS_PASSWORD_HASH) fromEnv.GLADOS_PASSWORD_HASH = process.env.GLADOS_PASSWORD_HASH;
   if (process.env.GLADOS_SESSION_SECRET) fromEnv.GLADOS_SESSION_SECRET = process.env.GLADOS_SESSION_SECRET;
   if (Object.keys(fromEnv).length) {
-    try { upsertEnvLocal(fromEnv); } catch (e) { console.error('[bootstrap] env-local write failed:', e.message); }
+    const file = path.join(process.cwd(), '.env.local');
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    let lines = fs.existsSync(file) ? fs.readFileSync(file, 'utf8').split('\n') : [];
+    for (const [k, v] of Object.entries(fromEnv)) {
+      lines = lines.filter((l) => !l.startsWith(k + '='));
+      lines.push(`${k}=${v}`);
+    }
+    fs.writeFileSync(file, lines.filter((l) => l.trim() !== '').join('\n') + '\n');
+    console.log('[bootstrap] operator credentials written to', file);
   }
 }
 
