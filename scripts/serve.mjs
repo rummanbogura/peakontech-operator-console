@@ -23,7 +23,7 @@
  * `--no-build` to restart on the last preview build without rebuilding. A build failure
  * exits non-zero and never starts a stale server. Code changes need a new `preview` run.
  */
-import { existsSync, readFileSync, renameSync } from 'node:fs';
+import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import path from 'node:path';
@@ -70,21 +70,18 @@ const brandName = get('GLADOS_BRAND').toLowerCase() === 'glados' ? 'GladOS' : 'F
 // protected state (the app itself only ever writes .env.local via the loopback setup).
 // DEPLOY BOOTSTRAP (our mirror): plain-node env-local writer (the app itself only
 // writes .env.local via the loopback setup; a fresh container needs it from env).
-import fs from 'node:fs';
-import path from 'node:path';
 {
   const fromEnv = {};
   if (process.env.GLADOS_PASSWORD_HASH) fromEnv.GLADOS_PASSWORD_HASH = process.env.GLADOS_PASSWORD_HASH;
   if (process.env.GLADOS_SESSION_SECRET) fromEnv.GLADOS_SESSION_SECRET = process.env.GLADOS_SESSION_SECRET;
   if (Object.keys(fromEnv).length) {
     const file = path.join(process.cwd(), '.env.local');
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    let lines = fs.existsSync(file) ? fs.readFileSync(file, 'utf8').split('\n') : [];
+    let lines = existsSync(file) ? readFileSync(file, 'utf8').split('\n') : [];
     for (const [k, v] of Object.entries(fromEnv)) {
       lines = lines.filter((l) => !l.startsWith(k + '='));
       lines.push(`${k}=${v}`);
     }
-    fs.writeFileSync(file, lines.filter((l) => l.trim() !== '').join('\n') + '\n');
+    writeFileSync(file, lines.filter((l) => l.trim() !== '').join('\n') + '\n');
     console.log('[bootstrap] operator credentials written to', file);
   }
 }
