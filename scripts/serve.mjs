@@ -65,6 +65,19 @@ const get = (k) => (process.env[k] ?? envLocal[k] ?? '').trim();
 // The product name this deployment shows (lib/brand.ts): FounderOS unless GLADOS_BRAND=glados.
 const brandName = get('GLADOS_BRAND').toLowerCase() === 'glados' ? 'GladOS' : 'FounderOS';
 
+// DEPLOY BOOTSTRAP (our mirror): propagate operator credentials from the process
+// environment into .env.local so a password-less fresh container can boot into the
+// protected state (the app itself only ever writes .env.local via the loopback setup).
+import { upsertEnvLocal } from '@/lib/auth';
+{
+  const fromEnv = {};
+  if (process.env.GLADOS_PASSWORD_HASH) fromEnv.GLADOS_PASSWORD_HASH = process.env.GLADOS_PASSWORD_HASH;
+  if (process.env.GLADOS_SESSION_SECRET) fromEnv.GLADOS_SESSION_SECRET = process.env.GLADOS_SESSION_SECRET;
+  if (Object.keys(fromEnv).length) {
+    try { upsertEnvLocal(fromEnv); } catch (e) { console.error('[bootstrap] env-local write failed:', e.message); }
+  }
+}
+
 const host = get('GLADOS_HOST') || '127.0.0.1';
 const port = get('PORT') || '4100';
 const hasPassword = Boolean(get('GLADOS_PASSWORD_HASH') && get('GLADOS_SESSION_SECRET'));
